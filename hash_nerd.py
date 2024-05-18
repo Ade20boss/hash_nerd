@@ -547,403 +547,401 @@ def main():
             print(f"Your password scored {score} out of 10")
 
     if choice == 7:
-     print("1. Brute force based on password owner information: ")
-     print("2. Brute force using all possible combination of character set: ")
+       print("1. Brute force based on password owner information: ")
+       print("2. Brute force using all possible combination of character set: ")
+       while True:
+           try:
+               bruteforce_choice = int(input("Enter your choice (1-2): "))
+               if bruteforce_choice < 1 or bruteforce_choice > 2:
+                   raise ValueError("Invalid choice. Please enter a number between 1 and 2.")
+               else:
+                   break
+           except ValueError as e:
+               print(f"Error: {e}")
 
-    while True:
-        try:
-            bruteforce_choice = int(input("Enter your choice (1-2): "))
-            if bruteforce_choice < 1 or bruteforce_choice > 2:
-                raise ValueError("Invalid choice. Please enter a number between 1 and 2.")
-            else:
-                break
-        except ValueError as e:
-            print(f"Error: {e}")
-    if bruteforce_choice == 2:
-        def generate_passwords(length, charset, include_space):
-            """
-            Generate all possible passwords of a given length using the characters in the charset.
-            """
-            if length == 0:
-                yield ''
-            else:
-                for char in charset:
-                    for password in generate_passwords(length - 1, charset, include_space):
-                        if include_space:
-                            yield char + ' ' + password
-                        else:
-                            yield char + password
+       if bruteforce_choice == 2:
+           def generate_passwords(length, charset, include_space):
+               """
+               Generate all possible passwords of a given length using the characters in the charset.
+               """
+               if length == 0:
+                   yield ''
+               else:
+                   for char in charset:
+                       for password in generate_passwords(length - 1, charset, include_space):
+                           if include_space:
+                               yield char + ' ' + password
+                           else:
+                               yield char + password
 
-        def hash_password(password, hash_algorithm):
-            """
-            Hashes a password using the specified hash algorithm.
-            """
-            hash_func = getattr(hashlib, hash_algorithm, None)
-            if hash_func:
-                return hash_func(password.encode()).hexdigest()
-            else:
-                raise ValueError("Hash algorithm not supported.")
+           def hash_password(password, hash_algorithm):
+               """
+               Hashes a password using the specified hash algorithm.
+               """
+               hash_func = getattr(hashlib, hash_algorithm, None)
+               if hash_func:
+                   return hash_func(password.encode()).hexdigest()
+               else:
+                   raise ValueError("Hash algorithm not supported.")
 
-        def guess_hash_algorithm(hash_to_crack):
-            """
-            Guess the hash algorithm based on the hash length.
-            """
-            hash_length = len(hash_to_crack)
-            if hash_length == 32:
-                return "md5"
-            elif hash_length == 40:
-                return "sha1"
-            elif hash_length == 56:
-                return "sha224"
-            elif hash_length == 64:
-                if hash_to_crack.startswith("sha3_"):
-                    return "sha3_512"
-                else:
-                    return "sha256"
-            elif hash_length == 96:
-                if hash_to_crack.startswith("sha3_"):
-                    return "sha3_384"
-                else:
-                    return "sha384"
-            elif hash_length == 128:
-                if hash_to_crack.startswith("sha3_"):
-                    return "sha3_256"
-                else:
-                    return "sha512"
-            else:
-                raise ValueError("Unable to guess hash algorithm.")
+           def guess_hash_algorithm(hash_to_crack):
+               """
+               Guess the hash algorithm based on the hash length.
+               """
+               hash_length = len(hash_to_crack)
+               if hash_length == 32:
+                   return "md5"
+               elif hash_length == 40:
+                   return "sha1"
+               elif hash_length == 56:
+                   return "sha224"
+               elif hash_length == 64:
+                   if hash_to_crack.startswith("sha3_"):
+                       return "sha3_512"
+                   else:
+                       return "sha256"
+               elif hash_length == 96:
+                   if hash_to_crack.startswith("sha3_"):
+                       return "sha3_384"
+                   else:
+                       return "sha384"
+               elif hash_length == 128:
+                   if hash_to_crack.startswith("sha3_"):
+                       return "sha3_256"
+                   else:
+                       return "sha512"
+               else:
+                   raise ValueError("Unable to guess hash algorithm.")
 
-        def calculate_combinations(charset_size, min_length, max_length):
-            """
-            Calculate the number of possible combinations based on charset size and password length.
-            """
-            total_combinations = sum(charset_size ** length for length in range(min_length, max_length + 1))
-            if total_combinations >= 700000:
-                print(Fore.LIGHTRED_EX + "MAN THIS IS MUCH")
-                return Fore.LIGHTRED_EX + str(total_combinations)
+           def calculate_combinations(charset_size, min_length, max_length):
+               """
+               Calculate the number of possible combinations based on charset size and password length.
+               """
+               total_combinations = sum(charset_size ** length for length in range(min_length, max_length + 1))
+               if total_combinations >= 700000:
+                   print(Fore.LIGHTRED_EX + "MAN THIS IS MUCH")
+                   return Fore.LIGHTRED_EX + str(total_combinations)
 
-            elif total_combinations <= 700000:
-                print(Fore.LIGHTGREEN_EX + "PLAUSIBLE")
-                return Fore.LIGHTGREEN_EX + str(total_combinations)
+               elif total_combinations <= 700000:
+                   print(Fore.LIGHTGREEN_EX + "PLAUSIBLE")
+                   return Fore.LIGHTGREEN_EX + str(total_combinations)
 
-        def brute_force(hash_to_crack, charset, min_length, max_length, hash_algorithm, include_space):
-            """
-            Brute-force a hash by trying all possible passwords of lengths up to max_length.
-            """
-            print("Brute forcing password...")
-            total_passwords_tried = 0
-            last_password_tried = ''
-            for length in range(min_length, max_length + 1):
-                for password in generate_passwords(length, charset, include_space):
-                    total_passwords_tried += 1
-                    sys.stdout.write(Fore.LIGHTRED_EX + f" \rTried {total_passwords_tried} passwords ")
-                    sys.stdout.flush()
-                    hashed_password = hash_password(password, hash_algorithm)
-                    if hashed_password == hash_to_crack:
-                        return password, total_passwords_tried
-                    last_password_tried = password
-            print("\nLast password tried: " + last_password_tried)
-            return None, total_passwords_tried
+           def brute_force(hash_to_crack, charset, min_length, max_length, hash_algorithm, include_space):
+               """
+               Brute-force a hash by trying all possible passwords of lengths up to max_length.
+               """
+               print("Brute forcing password...")
+               total_passwords_tried = 0
+               last_password_tried = ''
+               for length in range(min_length, max_length + 1):
+                   for password in generate_passwords(length, charset, include_space):
+                       total_passwords_tried += 1
+                       sys.stdout.write(Fore.LIGHTRED_EX + f" \rTried {total_passwords_tried} passwords ")
+                       sys.stdout.flush()
+                       hashed_password = hash_password(password, hash_algorithm)
+                       if hashed_password == hash_to_crack:
+                           return password, total_passwords_tried
+                       last_password_tried = password
+               print("\nLast password tried: " + last_password_tried)
+               return None, total_passwords_tried
 
-            # Example usage:
+               # Example usage:
 
-        if __name__ == "__main__":
-            hash_to_crack = input("Enter the hash to crack: ")
-            include_uppercase = input("Include uppercase letters? (y/n): ").lower() == "y"
-            include_lowercase = input("Include lowercase letters? (y/n): ").lower() == "y"
-            include_digits = input("Include digits? (y/n): ").lower() == "y"
-            include_symbols = input("Include symbols? (y/n): ").lower() == "y"
-            include_space = input("Include space between characters? (y/n): ").lower() == "y"
-            min_length = int(input("Enter the minimum password length to try: "))
-            max_length = int(input("Enter the maximum password length to try: "))
+           hash_to_crack = input("Enter the hash to crack: ")
+           include_uppercase = input("Include uppercase letters? (y/n): ").lower() == "y"
+           include_lowercase = input("Include lowercase letters? (y/n): ").lower() == "y"
+           include_digits = input("Include digits? (y/n): ").lower() == "y"
+           include_symbols = input("Include symbols? (y/n): ").lower() == "y"
+           include_space = input("Include space between characters? (y/n): ").lower() == "y"
+           min_length = int(input("Enter the minimum password length to try: "))
+           max_length = int(input("Enter the maximum password length to try: "))
 
-            charset_size = 0
-            if include_uppercase:
-                charset_size += len(string.ascii_uppercase)
-            if include_lowercase:
-                charset_size += len(string.ascii_lowercase)
-            if include_digits:
-                charset_size += len(string.digits)
-            if include_symbols:
-                charset_size += len(string.punctuation)
+           charset_size = 0
+           if include_uppercase:
+               charset_size += len(string.ascii_uppercase)
+           if include_lowercase:
+               charset_size += len(string.ascii_lowercase)
+           if include_digits:
+               charset_size += len(string.digits)
+           if include_symbols:
+               charset_size += len(string.punctuation)
 
-            total_combinations = calculate_combinations(charset_size, min_length, max_length)
-            print("Total possible combinations:", total_combinations)
+           total_combinations = calculate_combinations(charset_size, min_length, max_length)
+           print("Total possible combinations:", total_combinations)
 
-            charset = ''
-            if include_uppercase:
-                charset += string.ascii_uppercase
-            if include_lowercase:
-                charset += string.ascii_lowercase
-            if include_digits:
-                charset += string.digits
-            if include_symbols:
-                charset += string.punctuation
+           charset = ''
+           if include_uppercase:
+               charset += string.ascii_uppercase
+           if include_lowercase:
+               charset += string.ascii_lowercase
+           if include_digits:
+               charset += string.digits
+           if include_symbols:
+               charset += string.punctuation
 
-            hash_algorithm = guess_hash_algorithm(hash_to_crack)
+           hash_algorithm = guess_hash_algorithm(hash_to_crack)
 
-            cracked_password, total_passwords_tried = brute_force(hash_to_crack, charset, min_length, max_length,
-                                                                  hash_algorithm,
-                                                                  include_space)
-            if cracked_password:
-                print(Fore.LIGHTGREEN_EX + "Password cracked: " + cracked_password)
-    elif bruteforce_choice == 1:
-        import itertools
-        import hashlib
-        import random
-        import string
-        from colorama import Fore
+           cracked_password, total_passwords_tried = brute_force(hash_to_crack, charset, min_length, max_length,
+                                                                 hash_algorithm,
+                                                                 include_space)
+           if cracked_password:
+               print(Fore.LIGHTGREEN_EX + "Password cracked: " + cracked_password)
 
-        # Expanded SocialMediaAPI class
-        class SocialMediaAPI:
-            def __init__(self):
-                # Mock data for demonstration
-                self.users = {
-                    "user1": {"name": "User One", "friends": ["user2", "user3"], "posts": ["post1", "post2"]},
-                    "user2": {"name": "User Two", "friends": ["user1"], "posts": ["post3"]},
-                    "user3": {"name": "User Three", "friends": ["user1"], "posts": []}
-                }
-                self.posts = {
-                    "post1": {"content": "Post 1 Content", "likes": 10, "comments": ["comment1", "comment2"]},
-                    "post2": {"content": "Post 2 Content", "likes": 20, "comments": ["comment3"]},
-                    "post3": {"content": "Post 3 Content", "likes": 5, "comments": []}
-                }
-                self.comments = {
-                    "comment1": {"author": "user2", "content": "Comment 1 Content"},
-                    "comment2": {"author": "user3", "content": "Comment 2 Content"},
-                    "comment3": {"author": "user1", "content": "Comment 3 Content"}
-                }
-                self.notifications = {
-                    "user1": {"friend_requests": ["user4"], "likes": 3, "comments": 2}
-                }
-                self.groups = {
-                    "group1": {"name": "Group One", "members": ["user1", "user2"],
-                               "description": "Description of Group One"}
-                }
-                # Assume additional data structures and methods for other features
 
-            def get_user_info(self, username):
-                # Retrieve user information
-                return self.users.get(username, {})
+       elif bruteforce_choice == 1:
 
-            def get_user_friends(self, username):
-                # Retrieve user's friends
-                user = self.users.get(username, {})
-                return user.get("friends", [])
+           # Expanded SocialMediaAPI class
 
-            def get_user_posts(self, username):
-                # Retrieve user's posts
-                user = self.users.get(username, {})
-                posts = user.get("posts", [])
-                return [self.posts.get(post, {}) for post in posts]
+           class SocialMediaAPI:
+               def __init__(self):
+                   # Mock data for demonstration
+                   self.users = {
+                       "user1": {"name": "User One", "friends": ["user2", "user3"], "posts": ["post1", "post2"]},
+                       "user2": {"name": "User Two", "friends": ["user1"], "posts": ["post3"]},
+                       "user3": {"name": "User Three", "friends": ["user1"], "posts": []}
+                   }
+                   self.posts = {
+                       "post1": {"content": "Post 1 Content", "likes": 10, "comments": ["comment1", "comment2"]},
+                       "post2": {"content": "Post 2 Content", "likes": 20, "comments": ["comment3"]},
+                       "post3": {"content": "Post 3 Content", "likes": 5, "comments": []}
+                   }
+                   self.comments = {
+                       "comment1": {"author": "user2", "content": "Comment 1 Content"},
+                       "comment2": {"author": "user3", "content": "Comment 2 Content"},
+                       "comment3": {"author": "user1", "content": "Comment 3 Content"}
+                   }
+                   self.notifications = {
+                       "user1": {"friend_requests": ["user4"], "likes": 3, "comments": 2}
+                   }
+                   self.groups = {
+                       "group1": {"name": "Group One", "members": ["user1", "user2"],
+                                  "description": "Description of Group One"}
+                   }
+                   # Assume additional data structures and methods for other features
 
-            def get_post_likes(self, post_id):
-                # Retrieve likes for a post
-                post = self.posts.get(post_id, {})
-                return post.get("likes", 0)
+               def get_user_info(self, username):
+                   # Retrieve user information
+                   return self.users.get(username, {})
 
-            def get_post_comments(self, post_id):
-                # Retrieve comments for a post
-                post = self.posts.get(post_id, {})
-                comments = post.get("comments", [])
-                return [self.comments.get(comment, {}) for comment in comments]
+               def get_user_friends(self, username):
+                   # Retrieve user's friends
+                   user = self.users.get(username, {})
+                   return user.get("friends", [])
 
-            def get_notifications(self, username):
-                # Retrieve notifications for a user
-                return self.notifications.get(username, {})
+               def get_user_posts(self, username):
+                   # Retrieve user's posts
+                   user = self.users.get(username, {})
+                   posts = user.get("posts", [])
+                   return [self.posts.get(post, {}) for post in posts]
 
-            def get_group_info(self, group_id):
-                # Retrieve information about a group
-                return self.groups.get(group_id, {})
+               def get_post_likes(self, post_id):
+                   # Retrieve likes for a post
+                   post = self.posts.get(post_id, {})
+                   return post.get("likes", 0)
 
-            # Additional methods for other features...
+               def get_post_comments(self, post_id):
+                   # Retrieve comments for a post
+                   post = self.posts.get(post_id, {})
+                   comments = post.get("comments", [])
+                   return [self.comments.get(comment, {}) for comment in comments]
 
-        def generate_passwords(profile):
-            """
-            Generate passwords based on personal information in the profile.
-            """
-            passwords = []
+               def get_notifications(self, username):
+                   # Retrieve notifications for a user
+                   return self.notifications.get(username, {})
 
-            # Extract relevant personal information from the profile
-            name = profile.get("name", "")
-            dob_year = profile.get("dob_year", "")
-            dob_month = profile.get("dob_month", "")
-            dob_day = profile.get("dob_day", "")
-            pet_name = profile.get("pet_name", "")
-            spouse_name = profile.get("spouse_name", "")
-            child_name = profile.get("child_name", "")
-            favorite_number = profile.get("favorite_number", "")
+               def get_group_info(self, group_id):
+                   # Retrieve information about a group
+                   return self.groups.get(group_id, {})
 
-            # Initialize SocialMediaAPI
-            social_media_api = SocialMediaAPI()
-            username = profile.get("username", "")
+               # Additional methods for other features...
 
-            # Get additional information from social media API
-            social_media_info = social_media_api.get_user_info(username)
-            interests = social_media_info.get("interests", [])
-            quotes = social_media_info.get("quotes", [])
-            friends = social_media_api.get_user_friends(username)
-            notifications = social_media_api.get_notifications(username)
+           def generate_passwords(profile):
+               """
+               Generate passwords based on personal information in the profile.
+               """
+               passwords = []
 
-            # Additional personal information
-            additional_info = interests + quotes + friends + list(notifications.keys())
+               # Extract relevant personal information from the profile
+               name = profile.get("name", "")
+               dob_year = profile.get("dob_year", "")
+               dob_month = profile.get("dob_month", "")
+               dob_day = profile.get("dob_day", "")
+               pet_name = profile.get("pet_name", "")
+               spouse_name = profile.get("spouse_name", "")
+               child_name = profile.get("child_name", "")
+               favorite_number = profile.get("favorite_number", "")
 
-            # Combine personal information and additional info
-            personal_info = [name, dob_year, dob_month, dob_day, pet_name, spouse_name, child_name, favorite_number]
-            personal_info += additional_info
+               # Initialize SocialMediaAPI
+               social_media_api = SocialMediaAPI()
+               username = profile.get("username", "")
 
-            # Generate passwords based on various combinations and permutations of the personal information
-            # You can customize this based on common patterns and combinations you want to include
-            patterns = [
-                # Basic patterns
-                name,
-                dob_year,
-                dob_month,
-                dob_day,
-                pet_name,
-                spouse_name,
-                child_name,
-                favorite_number,
-                # Combination of basic patterns
-                name + dob_year,
-                name + dob_month,
-                name + dob_day,
-                name + pet_name,
-                name + spouse_name,
-                name + child_name,
-                dob_year + dob_month,
-                dob_year + dob_day,
-                dob_year + pet_name,
-                dob_year + spouse_name,
-                dob_year + child_name,
-                dob_month + dob_day,
-                dob_month + pet_name,
-                dob_month + spouse_name,
-                dob_month + child_name,
-                dob_day + pet_name,
-                dob_day + spouse_name,
-                name + "@" + dob_year,
-                name + "@" + dob_month,
-                name + "@" + dob_day,
-                dob_day + child_name,
-                pet_name + spouse_name,
-                pet_name + child_name,
-                spouse_name + child_name,
-                # Additional patterns based on interests and quotes
-                *interests,
-                *quotes
-            ]
+               # Get additional information from social media API
+               social_media_info = social_media_api.get_user_info(username)
+               interests = social_media_info.get("interests", [])
+               quotes = social_media_info.get("quotes", [])
+               friends = social_media_api.get_user_friends(username)
+               notifications = social_media_api.get_notifications(username)
 
-            # Additional substitution patterns
-            for pattern in patterns:
-                for substitute in ["", "!", "#", "$", "&"]:
-                    passwords.append(
-                        pattern.replace("a", "@").replace("e", "3").replace("o", "0").replace("i", "1").replace("s",
-                                                                                                                "$").replace(
-                            "t", "7").replace("l", "1").replace("g", "9").replace("z", "2").replace("q", "9").replace(
-                            "b", "8") + substitute)
+               # Additional personal information
+               additional_info = interests + quotes + friends + list(notifications.keys())
 
-            # Generate more combinations of basic patterns with symbols
-            for i in range(len(patterns)):
-                for j in range(i + 1, len(patterns)):
-                    password = patterns[i] + patterns[j]
-                    password += ''.join(random.choices(string.punctuation, k=3))  # Add 3 random symbols
-                    passwords.append(password)
-                    passwords.append(password[::-1])  # Reversed combination
+               # Combine personal information and additional info
+               personal_info = [name, dob_year, dob_month, dob_day, pet_name, spouse_name, child_name, favorite_number]
+               personal_info += additional_info
 
-            # Generate passwords based on combinations of the defined patterns
-            for pattern in patterns:
-                # Generate variations of the pattern using different separators and permutations
-                for separator in ["", ".", "-", "_", ""]:
-                    for permuted_pattern in itertools.permutations(pattern.split()):
-                        password = separator.join(permuted_pattern)
-                        passwords.append(password)
+               # Generate passwords based on various combinations and permutations of the personal information
+               # You can customize this based on common patterns and combinations you want to include
+               patterns = [
+                   # Basic patterns
+                   name,
+                   dob_year,
+                   dob_month,
+                   dob_day,
+                   pet_name,
+                   spouse_name,
+                   child_name,
+                   favorite_number,
+                   # Combination of basic patterns
+                   name + dob_year,
+                   name + dob_month,
+                   name + dob_day,
+                   name + pet_name,
+                   name + spouse_name,
+                   name + child_name,
+                   dob_year + dob_month,
+                   dob_year + dob_day,
+                   dob_year + pet_name,
+                   dob_year + spouse_name,
+                   dob_year + child_name,
+                   dob_month + dob_day,
+                   dob_month + pet_name,
+                   dob_month + spouse_name,
+                   dob_month + child_name,
+                   dob_day + pet_name,
+                   dob_day + spouse_name,
+                   name + "@" + dob_year,
+                   name + "@" + dob_month,
+                   name + "@" + dob_day,
+                   dob_day + child_name,
+                   pet_name + spouse_name,
+                   pet_name + child_name,
+                   spouse_name + child_name,
+                   # Additional patterns based on interests and quotes
+                   *interests,
+                   *quotes
+               ]
 
-            print("Number of generated passwords:", len(passwords))
-            return passwords
+               # Additional substitution patterns
+               for pattern in patterns:
+                   for substitute in ["", "!", "#", "$", "&"]:
+                       passwords.append(
+                           pattern.replace("a", "@").replace("e", "3").replace("o", "0").replace("i", "1").replace("s",
+                                                                                                                   "$").replace(
+                               "t", "7").replace("l", "1").replace("g", "9").replace("z", "2").replace("q",
+                                                                                                       "9").replace(
+                               "b", "8") + substitute)
 
-        def get_user_profile():
-            """
-            Prompt the user for personal information and return a profile dictionary.
-            """
-            print(Fore.LIGHTGREEN_EX + "PROVIDE INFORMATION")
-            name = input("Name: ").strip()
-            dob_year = input("Year of Birth: ").strip()
-            dob_month = input("Month of Birth: ").strip()
-            dob_day = input("Day of Birth: ").strip()
-            pet_name = input("Pet's Name: ").strip()
-            spouse_name = input("Spouse's Name: ").strip()
-            child_name = input("Child's Name: ").strip()
-            favorite_number = input("Favorite Number: ").strip()
-            username = input("Social Media Username: ").strip()
+               # Generate more combinations of basic patterns with symbols
+               for i in range(len(patterns)):
+                   for j in range(i + 1, len(patterns)):
+                       password = patterns[i] + patterns[j]
+                       password += ''.join(random.choices(string.punctuation, k=3))  # Add 3 random symbols
+                       passwords.append(password)
+                       passwords.append(password[::-1])  # Reversed combination
 
-            profile = {
-                "name": name,
-                "dob_year": dob_year,
-                "dob_month": dob_month,
-                "dob_day": dob_day,
-                "pet_name": pet_name,
-                "spouse_name": spouse_name,
-                "child_name": child_name,
-                "favorite_number": favorite_number,
-                "username": username
-            }
-            return profile
+               # Generate passwords based on combinations of the defined patterns
+               for pattern in patterns:
+                   # Generate variations of the pattern using different separators and permutations
+                   for separator in ["", ".", "-", "_", ""]:
+                       for permuted_pattern in itertools.permutations(pattern.split()):
+                           password = separator.join(permuted_pattern)
+                           passwords.append(password)
 
-        hash_algorithm = input("Enter hash algorithm: ").lower()
+               print("Number of generated passwords:", len(passwords))
+               return passwords
 
-        def hash_password(password):
-            # Convert to lowercase here
-            if hash_algorithm == "md5":
-                return hashlib.md5(password.encode()).hexdigest()
-            elif hash_algorithm == 'sha256':
-                return hashlib.sha256(password.encode()).hexdigest()
-            elif hash_algorithm == 'sha1':
-                return hashlib.sha1(password.encode()).hexdigest()
-            elif hash_algorithm == 'sha224':
-                return hashlib.sha224(password.encode()).hexdigest()
-            elif hash_algorithm == 'sha384':
-                return hashlib.sha384(password.encode()).hexdigest()
-            elif hash_algorithm == 'sha512':
-                return hashlib.sha512(password.encode()).hexdigest()
-            elif hash_algorithm == 'sha3_224':
-                return hashlib.sha3_224(password.encode()).hexdigest()
-            elif hash_algorithm == 'sha3_256':
-                return hashlib.sha3_256(password.encode()).hexdigest()
-            elif hash_algorithm == 'sha3_384':
-                return hashlib.sha3_384(password.encode()).hexdigest()
-            elif hash_algorithm == 'sha3_512':
-                return hashlib.sha3_512(password.encode()).hexdigest()
+           def get_user_profile():
+               """
+               Prompt the user for personal information and return a profile dictionary.
+               """
+               print(Fore.LIGHTGREEN_EX + "PROVIDE INFORMATION")
+               name = input("Name: ").strip()
+               dob_year = input("Year of Birth: ").strip()
+               dob_month = input("Month of Birth: ").strip()
+               dob_day = input("Day of Birth: ").strip()
+               pet_name = input("Pet's Name: ").strip()
+               spouse_name = input("Spouse's Name: ").strip()
+               child_name = input("Child's Name: ").strip()
+               favorite_number = input("Favorite Number: ").strip()
+               username = input("Social Media Username: ").strip()
 
-        def brute_force_hash(target_hash, passwords):
-            """
-            Brute force comparison of hashed passwords with the target hash.
-            """
-            for password in passwords:
-                hashed_password = hash_password(password)
-                if hashed_password == target_hash:
-                    return password
-            return None
+               profile = {
+                   "name": name,
+                   "dob_year": dob_year,
+                   "dob_month": dob_month,
+                   "dob_day": dob_day,
+                   "pet_name": pet_name,
+                   "spouse_name": spouse_name,
+                   "child_name": child_name,
+                   "favorite_number": favorite_number,
+                   "username": username
+               }
+               return profile
 
-        # Example usage:
-        if __name__ == "__main__":
-            # Get the user's profile
-            user_profile = get_user_profile()
+           hash_algorithm = input("Enter hash algorithm: ").lower()
 
-            # Generate passwords based on the user's profile
-            generated_passwords = generate_passwords(user_profile)
+           def hash_password(password):
+               # Convert to lowercase here
+               if hash_algorithm == "md5":
+                   return hashlib.md5(password.encode()).hexdigest()
+               elif hash_algorithm == 'sha256':
+                   return hashlib.sha256(password.encode()).hexdigest()
+               elif hash_algorithm == 'sha1':
+                   return hashlib.sha1(password.encode()).hexdigest()
+               elif hash_algorithm == 'sha224':
+                   return hashlib.sha224(password.encode()).hexdigest()
+               elif hash_algorithm == 'sha384':
+                   return hashlib.sha384(password.encode()).hexdigest()
+               elif hash_algorithm == 'sha512':
+                   return hashlib.sha512(password.encode()).hexdigest()
+               elif hash_algorithm == 'sha3_224':
+                   return hashlib.sha3_224(password.encode()).hexdigest()
+               elif hash_algorithm == 'sha3_256':
+                   return hashlib.sha3_256(password.encode()).hexdigest()
+               elif hash_algorithm == 'sha3_384':
+                   return hashlib.sha3_384(password.encode()).hexdigest()
+               elif hash_algorithm == 'sha3_512':
+                   return hashlib.sha3_512(password.encode()).hexdigest()
 
-            # Get the target hash from the user
-            target_hash = input("Enter the target hash: ").strip()
+           def brute_force_hash(target_hash, passwords):
+               """
+               Brute force comparison of hashed passwords with the target hash.
+               """
+               for password in passwords:
+                   hashed_password = hash_password(password)
+                   if hashed_password == target_hash:
+                       return password
+               return None
 
-            # Perform brute-force comparison
-            found_password = brute_force_hash(target_hash, generated_passwords)
+           # Example usage:
+           if __name__ == "__main__":
+               # Get the user's profile
+               user_profile = get_user_profile()
 
-            # Print the result
-            if found_password:
-                print(Fore.LIGHTGREEN_EX + f"Password cracked: {found_password}")
-            else:
-                print(Fore.LIGHTRED_EX + "Status:Exhausted" + "Password not found")
+               # Generate passwords based on the user's profile
+               generated_passwords = generate_passwords(user_profile)
+
+               # Get the target hash from the user
+               target_hash = input("Enter the target hash: ").strip()
+
+               # Perform brute-force comparison
+               found_password = brute_force_hash(target_hash, generated_passwords)
+
+               # Print the result
+               if found_password:
+                   print(Fore.LIGHTGREEN_EX + f"Password cracked: {found_password}")
+               else:
+                   print(Fore.LIGHTRED_EX + "Status:Exhausted" + "Password not found")
 
 
 if __name__ == "__main__":
